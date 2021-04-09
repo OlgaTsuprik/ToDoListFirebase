@@ -10,6 +10,7 @@ import Firebase
 
 class LoginViewController: UIViewController {
     let segueIdentifier = "tasksSegue"
+    var ref: DatabaseReference!
     
     // MARK: Outlets
     @IBOutlet weak var warningLabel: UILabel!
@@ -21,6 +22,8 @@ class LoginViewController: UIViewController {
     // MARK: Life cicle
     override func viewDidLoad() {
         super.viewDidLoad()
+        ref = Database.database().reference(withPath: "users")
+        
         self.keyboardHideWhenTappedAround()
         warningLabel.alpha = 0
         Auth.auth().addStateDidChangeListener { [weak self] (auth, user) in
@@ -124,11 +127,15 @@ class LoginViewController: UIViewController {
             displayWarningLabel(withText: "Info is incorrect")
             return
         }
-        Auth.auth().createUser(withEmail: email, password: password) { [weak self] (user, error) in
-            if error == nil {
-                self?.performSegue(withIdentifier: self?.segueIdentifier ?? "", sender: nil)
+        Auth.auth().createUser(withEmail: email, password: password, completion: { [weak self] (authResult, error) in
+            guard error == nil, authResult != nil else {
+                print(error?.localizedDescription)
+                return
             }
-        }
+            let userRef = self?.ref.childByAutoId()
+            userRef?.setValue(["email": email])
+            //ref.updateChildValues(childUpdates)
+            
+        })
     }
 }
-
