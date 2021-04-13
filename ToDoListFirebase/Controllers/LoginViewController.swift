@@ -9,6 +9,8 @@ import UIKit
 import Firebase
 
 class LoginViewController: UIViewController {
+    
+    // MARK: Properties
     let segueIdentifier = "tasksSegue"
     var ref: DatabaseReference!
     
@@ -53,12 +55,10 @@ class LoginViewController: UIViewController {
         keyboardFrame = self.view.convert(keyboardFrame, to: nil)
         //self.mainScrollView.contentInset.bottom = keyboardFrame.size.height
         (self.view as! UIScrollView).contentInset.bottom = keyboardFrame.size.height
-        
     }
     
     @objc private func keyboardWillHide() {
         (self.view as! UIScrollView).contentInset.bottom = .zero
-        
     }
     
     func keyboardHideWhenTappedAround() {
