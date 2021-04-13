@@ -10,15 +10,18 @@ import Firebase
 
 class TasksViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
     
+    // MARK: Properties
     var user: User!
     var ref: DatabaseReference!
-    var task = Array<Task>()
+    var tasks = Array<Task>()
     
+    // MARK: Outlets
     @IBOutlet weak var tableView: UITableView!
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        5
+        return tasks.count
     }
     
+    // MARK: Life cicle
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -28,15 +31,68 @@ class TasksViewController: UIViewController, UITableViewDelegate, UITableViewDat
         ref = Database.database().reference(withPath: "users").child(user.uid).child("tasks")
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        ref.observe(.value) { [weak self] (snapshot) in
+            var _tasks = Array<Task>()
+            for item in snapshot.children {
+                let task = Task(snapshot: item as! DataSnapshot)
+                _tasks.append(task)
+            }
+            self?.tasks = _tasks
+            self?.tableView.reloadData()
+        }
+    }
+    
+    // MARK: Methods
+    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        return "tasks for \(user.email)"
+    }
+    
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
         cell.textLabel?.text = "\(indexPath.row)"
         cell.textLabel?.textColor = .white
         cell.backgroundColor = .clear
         
+        let task = tasks[indexPath.row]
+        let isCompleted = task.completed
+        let taskTitle = task.title
+        cell.textLabel?.text = taskTitle
+        
+        toggleCompletion(cell, isCompleted: isCompleted)
+        
         return cell
     }
     
+    func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+        return true
+    }
+    
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        if editingStyle == .delete {
+            let task = tasks[indexPath.row]
+            task.ref?.removeValue()
+        }
+    }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        guard let cell = tableView.cellForRow(at: indexPath) else {
+            return
+        }
+        let task = tasks[indexPath.row]
+        let isCompleted = !task.completed
+        
+        toggleCompletion(cell, isCompleted: isCompleted)
+        task.ref?.updateChildValues(["completed" : isCompleted])
+    }
+    
+    func toggleCompletion(_ cell: UITableViewCell, isCompleted: Bool) {
+        cell.accessoryType = isCompleted ? .checkmark : .none
+    }
+    
+    // MARK: IB Actions
     @IBAction func addTapped(_ sender: Any) {
         let alertController = UIAlertController(title: "New task", message: "Add new task", preferredStyle: .alert)
         alertController.addTextField()
@@ -51,7 +107,6 @@ class TasksViewController: UIViewController, UITableViewDelegate, UITableViewDat
         alertController.addAction(save)
         alertController.addAction(cancel)
         present(alertController, animated: true, completion: nil)
-        
     }
     
     @IBAction func signOutTapped(_ sender: Any) {
@@ -62,5 +117,4 @@ class TasksViewController: UIViewController, UITableViewDelegate, UITableViewDat
         }
         dismiss(animated: true, completion: nil)
     }
-    
 }

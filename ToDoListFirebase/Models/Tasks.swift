@@ -8,8 +8,6 @@
 import Foundation
 import Firebase
 
-
-
 struct Task {
     let title: String
     let userId: String
